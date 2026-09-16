@@ -45,11 +45,19 @@ service cloud.firestore {
         && request.resource.data.role in ['campaigner', 'creator', 'reviewer']
         && (request.resource.data.createdAt is timestamp || request.resource.data.createdAt is string);
 
-      // Authenticated users can update their profile (e.g. role, display name)
+      // 1. Self-update of non-role fields (displayName etc.) by the user themselves,
+      // explicitly forbidding the role field from changing:
       allow update: if isAuthenticated() 
         && request.auth.uid == userId
-        && request.resource.data.uid == userId
-        && request.resource.data.role in ['campaigner', 'creator', 'reviewer'];
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'updatedAt']);
+
+      // 2. Role-field update on ANY user's document, permitted only when the requester's own role
+      // (looked up via getUserRole(request.auth.uid)) is 'reviewer', restricted to only the role
+      // and updatedAt fields via affectedKeys():
+      allow update: if isAuthenticated()
+        && getUserRole(request.auth.uid) == 'reviewer'
+        && request.resource.data.role in ['campaigner', 'creator', 'reviewer']
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'updatedAt']);
 
       // Client cannot delete their user profile
       allow delete: if false;

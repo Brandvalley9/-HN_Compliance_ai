@@ -373,6 +373,16 @@ describe('The Dirty Dozen - Security Spec RBAC Invariants', () => {
     await assertFails(getDoc(doc(unauthDb, 'regulatory_entries', 'reg1')));
     await assertFails(getDoc(doc(unauthDb, 'campaigns', 'c1', 'audit_trail', 'v1')));
   });
+
+  it('Creator attempting to self-assign role: reviewer on their own /users/{uid} doc -> DENIED', async () => {
+    const creatorDb = testEnv.authenticatedContext('creator-1', { email: 'creator1@test.com' }).firestore();
+    // Attempting to elevate own role to 'reviewer'
+    await assertFails(
+      updateDoc(doc(creatorDb, 'users', 'creator-1'), {
+        role: 'reviewer',
+      })
+    );
+  });
 });
 
 describe('Valid Authorized Operations (Must Succeed)', () => {
@@ -414,5 +424,23 @@ describe('Valid Authorized Operations (Must Succeed)', () => {
 
     await assertSucceeds(getDoc(doc(creatorDb, 'regulatory_entries', 'reg1')));
     await assertSucceeds(getDoc(doc(campaignerDb, 'regulatory_entries', 'reg1')));
+  });
+
+  it('Reviewer updating another user\'s role field on /users/{uid} -> SUCCEEDS', async () => {
+    const reviewerDb = testEnv.authenticatedContext('reviewer-1', { email: 'reviewer1@test.com' }).firestore();
+    await assertSucceeds(
+      updateDoc(doc(reviewerDb, 'users', 'creator-1'), {
+        role: 'campaigner',
+      })
+    );
+  });
+
+  it('Creator can update their own profile (e.g. displayName) without modifying role', async () => {
+    const creatorDb = testEnv.authenticatedContext('creator-1', { email: 'creator1@test.com' }).firestore();
+    await assertSucceeds(
+      updateDoc(doc(creatorDb, 'users', 'creator-1'), {
+        displayName: 'Creator Updated Display Name',
+      })
+    );
   });
 });
