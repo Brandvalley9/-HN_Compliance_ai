@@ -1,0 +1,174 @@
+{
+  "entities": {
+    "Campaign": {
+      "title": "Campaign",
+      "description": "A marketing or UGC campaign created by a campaigner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "productDescription": { "type": "string" },
+        "productType": { "type": "string" },
+        "targetAudience": { "type": "string" },
+        "platforms": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "approvedClaims": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "prohibitedClaims": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "requiredDisclosures": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "instructions": { "type": "string" },
+        "ownerId": { "type": "string" },
+        "ownerEmail": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "name",
+        "productDescription",
+        "productType",
+        "targetAudience",
+        "platforms",
+        "approvedClaims",
+        "prohibitedClaims",
+        "requiredDisclosures",
+        "instructions",
+        "ownerId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RegulatoryEntry": {
+      "title": "RegulatoryEntry",
+      "description": "A regulatory rule, statute, or standard entry curated by reviewers",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "source": { "type": "string" },
+        "documentName": { "type": "string" },
+        "sectionRef": { "type": "string" },
+        "summary": { "type": "string" },
+        "effectiveDate": { "type": "string" },
+        "topicTags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sourceUrl": { "type": "string" },
+        "createdById": { "type": "string" },
+        "createdByEmail": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": [
+        "source",
+        "documentName",
+        "sectionRef",
+        "summary",
+        "effectiveDate",
+        "topicTags",
+        "sourceUrl",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CampaignAuditVersion": {
+      "title": "CampaignAuditVersion",
+      "description": "Immutable version record for campaign submissions, AI evaluations, regulatory citations, and reviewer decisions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "campaignId": { "type": "string" },
+        "campaignName": { "type": "string" },
+        "versionNumber": { "type": "number" },
+        "submittedContentText": { "type": "string" },
+        "submittedBy": { "type": "object" },
+        "submittedAt": { "type": "string", "format": "date-time" },
+        "aiOutput": { "type": "object" },
+        "deterministicFindings": { "type": "array" },
+        "regulatoryEntriesUsed": { "type": "array" },
+        "reviewerDecision": { "type": "object" },
+        "finalApprovalStatus": { "type": "string" }
+      },
+      "required": [
+        "campaignId",
+        "versionNumber",
+        "submittedContentText",
+        "submittedBy",
+        "submittedAt",
+        "finalApprovalStatus"
+      ]
+    },
+    "ComplianceReport": {
+      "title": "ComplianceReport",
+      "description": "Compliance evaluation report containing AI reasoning, deterministic findings, and reviewer decisions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "campaignId": { "type": "string" },
+        "creatorId": { "type": "string" },
+        "campaignName": { "type": "string" },
+        "creatorHandle": { "type": "string" },
+        "submittedContentText": { "type": "string" },
+        "deterministicFindings": { "type": "array" },
+        "matchedRegulatoryEntries": { "type": "array" },
+        "aiReasoning": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "reviewerDecision": { "type": "object" }
+      },
+      "required": [
+        "submittedContentText",
+        "deterministicFindings",
+        "matchedRegulatoryEntries",
+        "aiReasoning",
+        "createdAt"
+      ]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile document storing immutable role and account metadata per uid",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "role": {
+          "type": "string",
+          "enum": ["campaigner", "creator", "reviewer"]
+        },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "User profiles collection with immutable role assignments written once at registration"
+    },
+    "/campaigns/{campaignId}": {
+      "schema": { "$ref": "#/entities/Campaign" },
+      "description": "Collection of UGC campaigns created by campaigners"
+    },
+    "/campaigns/{campaignId}/audit_trail/{versionId}": {
+      "schema": { "$ref": "#/entities/CampaignAuditVersion" },
+      "description": "Subcollection of audit trail version records under each campaign"
+    },
+    "/regulatory_entries/{entryId}": {
+      "schema": { "$ref": "#/entities/RegulatoryEntry" },
+      "description": "Collection of regulatory reference rules and guidance documents"
+    },
+    "/compliance_reports/{reportId}": {
+      "schema": { "$ref": "#/entities/ComplianceReport" },
+      "description": "Collection of compliance evaluation reports and reviewer queue items"
+    }
+  }
+}

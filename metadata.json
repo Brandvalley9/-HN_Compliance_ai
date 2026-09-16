@@ -1,0 +1,6 @@
+{
+  "name": "HypeNex Compliance Intelligence",
+  "description": "AI compliance reasoning and advertising standards intelligence platform with deterministic checks and grounded regulatory analysis.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
