@@ -8,14 +8,7 @@ import {
   UserCheck, 
   Megaphone, 
   Sparkles, 
-  ShieldCheck, 
-  FileText, 
-  History, 
   CheckCircle2, 
-  AlertCircle,
-  Video,
-  ArrowRight,
-  Layers,
   ChevronRight
 } from 'lucide-react';
 
@@ -48,111 +41,113 @@ export const CreatorDashboard: React.FC = () => {
 
   return (
     <div id="creator-flow-container" className="space-y-6">
-      {/* 1. Header Banner */}
-      <div id="creator-header-card" className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-2xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="space-y-1">
+      {/* 1. Spatial Header Banner */}
+      <div id="creator-header-card" className="glass-surface rounded-3xl p-6 relative overflow-hidden">
+        <div className="absolute -top-24 -right-24 w-60 h-60 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+          <div className="space-y-1.5">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 backdrop-blur-md">
                 <UserCheck className="w-3.5 h-3.5" />
-                Role: Creator Portal
+                Role: Creator Studio
               </span>
-              <span className="text-[11px] font-medium text-slate-500">
-                Logged in as <span className="font-semibold text-slate-700">{user?.displayName || user?.email || 'Demo Creator'}</span>
+              <span className="text-xs text-slate-400">
+                Logged in as <span className="font-semibold text-slate-200">{user?.displayName || user?.email || 'Demo Creator'}</span>
               </span>
             </div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900">
-              Assigned Campaigns & Pre-Flight Compliance
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+              Pre-Flight UGC Compliance
             </h1>
-            <p className="text-xs text-slate-600 max-w-2xl leading-relaxed">
-              Review your assigned brand campaigns, inspect plain-language guardrails (approved claims, forbidden words, mandatory disclosures), and submit your UGC captions or scripts for instant Steps 3–5 compliance verification.
+            <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+              Scan scripts and captions against verified FTC/ASA guardrails in real time with interactive Gemini reasoning.
             </p>
           </div>
 
-          {/* Campaign Count Chip */}
-          <div className="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-200 shrink-0 self-start sm:self-auto">
-            <div className="w-9 h-9 rounded-lg bg-indigo-50 border border-indigo-200 flex items-center justify-center text-indigo-600">
-              <Megaphone className="w-4 h-4" />
+          {/* Campaign Count Badge */}
+          <div className="flex items-center gap-3 bg-black/40 border border-white/10 p-3.5 rounded-2xl shrink-0 backdrop-blur-md">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+              <Megaphone className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">
-                Assigned Campaigns
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                Active Campaigns
               </span>
-              <span className="text-sm font-bold text-slate-900">
-                {campaigns.length} {campaigns.length === 1 ? 'Campaign' : 'Campaigns'}
+              <span className="text-base font-bold text-white">
+                {campaigns.length} Assigned
               </span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Assigned Campaign Selector / Tabs */}
-      <div id="assigned-campaigns-selector" className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-2xs space-y-3">
+      {/* 2. Spatial Campaign Selector */}
+      <div id="assigned-campaigns-selector" className="glass-surface rounded-3xl p-6 space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-            <Megaphone className="w-3.5 h-3.5 text-indigo-600" />
-            Select Your Active Campaign Assignment
+          <h2 className="text-xs font-bold text-slate-300 uppercase tracking-widest flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-indigo-400" />
+            Select Brand Brief
           </h2>
-          <span className="text-[11px] text-slate-500">
-            Switch between campaigns to inspect guardrails & submit content
+          <span className="text-xs text-slate-400">
+            Click to inspect guardrails & run spatial analysis
           </span>
         </div>
 
         {loading ? (
-          <div className="p-4 text-center text-xs text-slate-500">
-            Loading assigned campaigns...
+          <div className="p-8 text-center text-xs text-slate-400">
+            Loading assigned briefs...
           </div>
         ) : campaigns.length === 0 ? (
-          <div className="p-6 text-center rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-2">
+          <div className="p-8 text-center rounded-2xl bg-white/5 border border-white/10 text-xs text-slate-300 space-y-2">
             <p className="font-semibold">No assigned campaigns found.</p>
-            <p className="text-slate-500">
-              Switch to the <strong>Campaigner</strong> tab to create brand briefs or use the demo switch to load pre-seeded campaigns.
+            <p className="text-slate-400">
+              Switch to <strong>Campaigner</strong> tab to create brand briefs.
             </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {campaigns.map((camp) => {
-              const isSelected = (selectedCampaign?.id === camp.id);
+              const isSelected = selectedCampaign?.id === camp.id;
               return (
                 <button
                   key={camp.id}
                   type="button"
                   onClick={() => {
                     setSelectedCampaignId(camp.id || '');
-                    setStagedScript(''); // reset staged sample
+                    setStagedScript('');
                   }}
-                  className={`p-4 rounded-xl border text-left transition-all relative flex flex-col justify-between gap-3 ${
+                  className={`p-4 rounded-2xl border text-left transition-all relative flex flex-col justify-between gap-3 ${
                     isSelected
-                      ? 'bg-indigo-50/70 border-indigo-500 shadow-xs ring-2 ring-indigo-500/20'
-                      : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/60'
+                      ? 'bg-indigo-600/20 border-indigo-500/60 shadow-[0_0_20px_rgba(99,102,241,0.25)] ring-1 ring-indigo-400/30'
+                      : 'bg-white/5 border-white/10 hover:bg-white/10 hover:border-white/20'
                   }`}
                 >
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2">
-                      <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${
-                        isSelected ? 'bg-indigo-200/60 text-indigo-900' : 'bg-slate-100 text-slate-600'
+                      <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md ${
+                        isSelected ? 'bg-indigo-500/30 text-indigo-200 border border-indigo-400/30' : 'bg-white/5 text-slate-400'
                       }`}>
                         {camp.productType}
                       </span>
                       {isSelected && (
-                        <span className="flex items-center gap-1 text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full">
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 rounded-full">
                           <CheckCircle2 className="w-3 h-3" />
-                          Active
+                          Selected
                         </span>
                       )}
                     </div>
-                    <h3 className="text-sm font-bold text-slate-900 line-clamp-1">
+                    <h3 className="text-sm font-bold text-white line-clamp-1">
                       {camp.name}
                     </h3>
-                    <p className="text-xs text-slate-500 line-clamp-2 leading-normal">
+                    <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
                       {camp.productDescription}
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-200/50 flex items-center justify-between text-[11px] text-slate-500">
-                    <span>{camp.approvedClaims.length} Claims • {camp.requiredDisclosures.length} Disclosures</span>
-                    <span className="font-semibold text-indigo-600 flex items-center gap-0.5">
-                      Select <ChevronRight className="w-3 h-3" />
+                  <div className="pt-2 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
+                    <span>{camp.approvedClaims?.length || 0} Claims • {camp.requiredDisclosures?.length || 0} Disclosures</span>
+                    <span className="font-semibold text-indigo-400 flex items-center gap-0.5">
+                      Select <ChevronRight className="w-3.5 h-3.5" />
                     </span>
                   </div>
                 </button>
@@ -168,14 +163,13 @@ export const CreatorDashboard: React.FC = () => {
           campaign={selectedCampaign}
           onUseSampleScript={(script) => {
             setStagedScript(script);
-            // Smoothly scroll down to submission section
             const el = document.getElementById('creator-submission-flow-card');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
           }}
         />
       )}
 
-      {/* 4. Creator Submission & Steps 3-5 Audit Pipeline */}
+      {/* 4. Creator Submission & Spatial Scan Pipeline */}
       {selectedCampaign && (
         <CreatorSubmissionFlow
           campaign={selectedCampaign}
