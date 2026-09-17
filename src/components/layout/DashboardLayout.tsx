@@ -9,31 +9,31 @@ interface DashboardLayoutProps {
 }
 
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
-  const { isFirebaseConfigured, user } = useAuth();
+  const { isFirebaseConfigured } = useAuth();
 
   return (
-    <div id="hypenex-app-shell" className="min-h-screen bg-slate-100 flex flex-col">
+    <div id="hypenex-app-shell" className="min-h-screen flex flex-col text-slate-100">
       <AppHeader />
 
-      {/* Notice Banner if Firebase is pending project configuration */}
+      {/* Notice Banner if Firebase is pending */}
       {!isFirebaseConfigured && (
         <div 
           id="firebase-config-notice"
-          className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-900 flex items-center justify-between"
+          className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 text-xs text-amber-200 flex items-center justify-between backdrop-blur-md"
         >
-          <div className="flex items-center gap-2 max-w-5xl mx-auto w-full">
-            <Info className="w-4 h-4 text-amber-600 shrink-0" />
+          <div className="flex items-center gap-2 max-w-7xl mx-auto w-full">
+            <Info className="w-4 h-4 text-amber-400 shrink-0" />
             <span>
-              <strong>Foundation Environment Notice:</strong> Firebase credentials are not yet populated in <code className="bg-amber-100 px-1 py-0.5 rounded text-[11px]">.env</code>. You can preview, verify, and switch between all 3 role dashboards (Campaigner, Creator, Reviewer) using the header role switcher above.
+              <strong>Foundation Environment Notice:</strong> Running in local preview mode. You can switch roles using the spatial header above.
             </span>
           </div>
         </div>
       )}
 
-      {/* Main App Body */}
-      <div className="flex-1 flex w-full max-w-7xl mx-auto">
+      {/* Main App Body with Spatial Floating Layout */}
+      <div className="flex-1 flex w-full max-w-7xl mx-auto p-4 sm:p-6 gap-6">
         <AppSidebar />
-        <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto min-w-0">
           {children}
         </main>
       </div>
