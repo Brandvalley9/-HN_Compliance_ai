@@ -1,119 +1,65 @@
 import { 
+  collection, 
   doc, 
   getDoc, 
-  setDoc,
-  updateDoc,
-  serverTimestamp,
-  onSnapshot,
-  collection,
-  getDocs,
-  Unsubscribe
+  setDoc, 
+  updateDoc, 
+  serverTimestamp, 
+  onSnapshot 
 } from 'firebase/firestore';
-import { db, auth } from './firebase';
+import { db } from './firebase';
 import { UserRole } from '../types/auth';
-
-export const USERS_COLLECTION = 'users';
 
 export interface FirestoreUserProfile {
   uid: string;
   email: string | null;
   displayName: string | null;
   role: UserRole;
-  createdAt?: any;
-  updatedAt?: any;
-}
-
-export enum OperationType {
-  CREATE = 'create',
-  UPDATE = 'update',
-  DELETE = 'delete',
-  LIST = 'list',
-  GET = 'get',
-  WRITE = 'write',
-}
-
-export interface FirestoreErrorInfo {
-  error: string;
-  operationType: OperationType;
-  path: string | null;
-  authInfo: {
-    userId?: string | null;
-    email?: string | null;
-    emailVerified?: boolean | null;
-    isAnonymous?: boolean | null;
-    tenantId?: string | null;
-    providerInfo?: {
-      providerId?: string | null;
-      email?: string | null;
-    }[];
-  };
-}
-
-export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null): never {
-  const errInfo: FirestoreErrorInfo = {
-    error: error instanceof Error ? error.message : String(error),
-    authInfo: {
-      userId: auth?.currentUser?.uid,
-      email: auth?.currentUser?.email,
-      emailVerified: auth?.currentUser?.emailVerified,
-      isAnonymous: auth?.currentUser?.isAnonymous,
-      tenantId: auth?.currentUser?.tenantId,
-      providerInfo: auth?.currentUser?.providerData?.map(provider => ({
-        providerId: provider.providerId,
-        email: provider.email,
-      })) || []
-    },
-    operationType,
-    path
-  };
-  console.error('Firestore Error: ', JSON.stringify(errInfo));
-  throw new Error(JSON.stringify(errInfo));
+  createdAt?: unknown;
+  updatedAt?: unknown;
 }
 
 /**
- * Reads a user profile document from Firestore by UID.
- * Returns null if the document does not exist or if Firestore is not available.
+ * Fetches the user profile document from Firestore at `/users/{uid}`.
  */
 export async function getUserProfile(uid: string): Promise<FirestoreUserProfile | null> {
-  if (!db || !uid) return null;
-
-  const path = `${USERS_COLLECTION}/${uid}`;
-  try {
-    const userDocRef = doc(db, USERS_COLLECTION, uid);
-    const snap = await getDoc(userDocRef);
-    if (!snap.exists()) {
-      return null;
-    }
-    return snap.data() as FirestoreUserProfile;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.GET, path);
+  if (!db) {
+    throw new Error('Firestore is not initialized.');
   }
+
+  const userDocRef = doc(db, 'users', uid);
+  const snap = await getDoc(userDocRef);
+
+  if (snap.exists()) {
+    return snap.data() as FirestoreUserProfile;
+  }
+  return null;
 }
 
 /**
- * Subscribes to realtime updates for a user profile document at `/users/{uid}`.
+ * Subscribes to real-time changes to the user's Firestore profile.
  */
 export function subscribeToUserProfile(
-  uid: string, 
-  onUpdate: (profile: FirestoreUserProfile | null) => void,
+  uid: string,
+  onProfile: (profile: FirestoreUserProfile | null) => void,
   onError?: (err: Error) => void
-): Unsubscribe {
-  if (!db || !uid) {
+): () => void {
+  if (!db) {
+    onProfile(null);
     return () => {};
   }
 
-  const userDocRef = doc(db, USERS_COLLECTION, uid);
+  const userDocRef = doc(db, 'users', uid);
   return onSnapshot(
     userDocRef,
     (snap) => {
       if (snap.exists()) {
-        onUpdate(snap.data() as FirestoreUserProfile);
+        onProfile(snap.data() as FirestoreUserProfile);
       } else {
-        onUpdate(null);
+        onProfile(null);
       }
     },
     (err) => {
-      console.error('Realtime user profile listener error:', err);
       if (onError) onError(err);
     }
   );
@@ -122,7 +68,7 @@ export function subscribeToUserProfile(
 /**
  * Ensures a user profile exists in Firestore at `/users/{uid}`.
  * If the document exists, returns it without overwriting the existing role.
- * If the document does not exist, creates it with the given role (defaulting to 'campaigner') and serverTimestamp().
+ * If the document does not exist, creates it as 'creator' or 'campaigner' (never 'reviewer') with serverTimestamp().
  */
 export async function createOrFetchUserProfile(
   uid: string,
@@ -130,76 +76,59 @@ export async function createOrFetchUserProfile(
   displayName: string | null,
   rolePreference: UserRole = 'campaigner'
 ): Promise<FirestoreUserProfile> {
-  if (!db || !uid) {
-    throw new Error('Firestore is not configured or UID is missing');
+  if (!db) {
+    return {
+      uid,
+      email,
+      displayName: displayName || (email ? email.split('@')[0] : 'User'),
+      role: rolePreference === 'reviewer' ? 'campaigner' : rolePreference,
+      createdAt: new Date().toISOString()
+    };
   }
 
-  const path = `${USERS_COLLECTION}/${uid}`;
+  const userDocRef = doc(db, 'users', uid);
+
   try {
-    const userDocRef = doc(db, USERS_COLLECTION, uid);
     const existingSnap = await getDoc(userDocRef);
 
     if (existingSnap.exists()) {
-      // Return existing profile to preserve the stored role
       return existingSnap.data() as FirestoreUserProfile;
     }
 
-    // New user profile: write with serverTimestamp() and role (default 'campaigner')
+    // New user profile. Self-registration may only ever produce a campaigner or a creator:
+    // 'reviewer' is privileged and can only be granted by an existing reviewer / administrator.
+    // (firestore.rules enforces the same restriction server-side.)
+    const safeRole: UserRole = rolePreference === 'creator' ? 'creator' : 'campaigner';
     const newProfile: FirestoreUserProfile = {
       uid,
       email: email || null,
       displayName: displayName || (email ? email.split('@')[0] : 'User'),
-      role: rolePreference,
+      role: safeRole,
       createdAt: serverTimestamp()
     };
 
     await setDoc(userDocRef, newProfile);
     return newProfile;
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
+    console.error('Error fetching or creating user profile in Firestore:', error);
+    throw error;
   }
 }
 
 /**
- * Fetches all registered user profiles from Firestore.
- * Allowed for Reviewers via security rules.
+ * Updates non-role fields of the user profile document (e.g., displayName).
  */
-export async function getAllUserProfiles(): Promise<FirestoreUserProfile[]> {
+export async function updateUserProfile(
+  uid: string,
+  data: Partial<Omit<FirestoreUserProfile, 'uid' | 'role' | 'createdAt'>>
+): Promise<void> {
   if (!db) {
     throw new Error('Firestore is not initialized.');
   }
 
-  const path = USERS_COLLECTION;
-  try {
-    const colRef = collection(db, USERS_COLLECTION);
-    const snap = await getDocs(colRef);
-    const profiles: FirestoreUserProfile[] = [];
-    snap.forEach((d) => {
-      profiles.push(d.data() as FirestoreUserProfile);
-    });
-    return profiles;
-  } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
-  }
-}
-
-/**
- * Updates the user's role in Firestore.
- * Gated to Reviewers via Firestore security rules.
- */
-export async function updateUserRoleInFirestore(uid: string, newRole: UserRole): Promise<void> {
-  if (!db || !uid) {
-    throw new Error('Firestore is not configured or UID is missing');
-  }
-
-  const path = `${USERS_COLLECTION}/${uid}`;
-  try {
-    const userDocRef = doc(db, USERS_COLLECTION, uid);
-    await updateDoc(userDocRef, {
-      role: newRole,
-      updatedAt: serverTimestamp()
-    });
-  } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
-  }
+  const userDocRef = doc(db, 'users', uid);
+  await updateDoc(userDocRef, {
+    ...data,
+    updatedAt: serverTimestamp()
+  });
 }
