@@ -38,28 +38,26 @@ service cloud.firestore {
       // Authenticated users can read their own profile; reviewers can read user profiles
       allow read: if isAuthenticated() && (request.auth.uid == userId || isReviewer());
 
-      // Written at signup/first login for own document
+      // Written at signup/first login for the user's OWN document. Self-registration can only ever
+      // produce a campaigner or a creator. 'reviewer' is privileged so it can only be granted
+      // by an administrator or via the role-update rule below.
       allow create: if isAuthenticated()
         && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['uid', 'email', 'displayName', 'role', 'createdAt'])
         && request.resource.data.uid == userId
-        && request.resource.data.role in ['campaigner', 'creator', 'reviewer']
+        && request.resource.data.role in ['campaigner', 'creator']
         && (request.resource.data.createdAt is timestamp || request.resource.data.createdAt is string);
 
-      // 1. Self-update of non-role fields (displayName etc.) by the user themselves,
-      // explicitly forbidding the role field from changing:
-      allow update: if isAuthenticated() 
-        && request.auth.uid == userId
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName', 'updatedAt']);
-
-      // 2. Role-field update on ANY user's document, permitted only when the requester's own role
-      // (looked up via getUserRole(request.auth.uid)) is 'reviewer', restricted to only the role
-      // and updatedAt fields via affectedKeys():
+      // Self-update of non-role fields by the user themselves
       allow update: if isAuthenticated()
-        && getUserRole(request.auth.uid) == 'reviewer'
-        && request.resource.data.role in ['campaigner', 'creator', 'reviewer']
+        && request.auth.uid == userId
+        && request.resource.data.role == resource.data.role;
+
+      // Role updates can only be executed by an existing reviewer
+      allow update: if isAuthenticated()
+        && isReviewer()
         && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['role', 'updatedAt']);
 
-      // Client cannot delete their user profile
       allow delete: if false;
     }
 
@@ -93,57 +91,44 @@ service cloud.firestore {
 
       // Audit trail subcollection
       match /audit_trail/{versionId} {
-        // Read: Reviewers and the owning campaigner
         allow read: if isAuthenticated() && (
           isReviewer() ||
           get(/databases/$(database)/documents/campaigns/$(campaignId)).data.ownerId == request.auth.uid
         );
 
-        // Create: Creator matching report creatorId or owning campaigner / reviewer
         allow create: if isAuthenticated() && (
           isReviewer() ||
           get(/databases/$(database)/documents/campaigns/$(campaignId)).data.ownerId == request.auth.uid ||
           (isCreator() && request.resource.data.creatorId == request.auth.uid)
         );
 
-        // Update/Delete: Fully denied (immutable audit log)
         allow update: if false;
         allow delete: if false;
       }
     }
 
     match /compliance_reports/{reportId} {
-      // Read: Reviewers, report creator, or owning campaigner
+      // Read: Reviewers, the report's creator, or the campaign owner
       allow read: if isAuthenticated() && (
         isReviewer() ||
-        (isCreator() && resource.data.creatorId == request.auth.uid) ||
+        resource.data.creatorId == request.auth.uid ||
         (isCampaigner() && ('campaignId' in resource.data) && get(/databases/$(database)/documents/campaigns/$(resource.data.campaignId)).data.ownerId == request.auth.uid)
       );
 
-      // Create: Creators can create a report ONLY for themselves
-      allow create: if isAuthenticated()
-        && isCreator()
-        && request.resource.data.creatorId == request.auth.uid
-        && request.resource.data.submittedContentText is string
-        && request.resource.data.submittedContentText.size() > 0;
+      // Create: DENIED to every client. Reports are authored by the server (Admin SDK).
+      allow create: if false;
 
-      // Update: Reviewers ONLY can update reviewerDecision (and updatedAt timestamp)
-      // Immutable fields: aiReasoning, deterministicFindings, submittedContentText, creatorId
+      // Update: Reviewers ONLY can update reviewerDecision
       allow update: if isAuthenticated()
         && isReviewer()
-        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewerDecision', 'updatedAt'])
-        && request.resource.data.submittedContentText == resource.data.submittedContentText
-        && request.resource.data.creatorId == resource.data.creatorId;
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reviewerDecision', 'updatedAt']);
 
-      // Delete: Denied to preserve compliance records
       allow delete: if false;
     }
 
     match /regulatory_entries/{entryId} {
-      // Read: All authenticated users
       allow read: if isAuthenticated();
 
-      // Create/Update/Delete: Reviewers ONLY
       allow create: if isAuthenticated()
         && isReviewer()
         && request.resource.data.source is string
