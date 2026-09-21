@@ -89,8 +89,8 @@ export const LoginPage: React.FC = () => {
               Saved to Firestore Profile
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {(['campaigner', 'creator', 'reviewer'] as UserRole[]).map((role) => {
+          <div className="grid grid-cols-2 gap-2">
+            {(['campaigner', 'creator'] as UserRole[]).map((role) => {
               const isSelected = selectedRole === role;
               return (
                 <button
@@ -112,10 +112,9 @@ export const LoginPage: React.FC = () => {
           <p className="text-[11px] text-slate-600">
             {selectedRole === 'campaigner' && 'Campaigners configure campaign rules, brand guidelines, and review audit trails.'}
             {selectedRole === 'creator' && 'Creators submit video drafts and view automated compliance pre-checks.'}
-            {selectedRole === 'reviewer' && 'Reviewers audit escalated claims and cross-reference regulatory criteria.'}
           </p>
           <div className="text-[10px] text-slate-500 bg-slate-50 border border-slate-200 rounded-md p-2">
-            <strong>Security Notice:</strong> Upon first login or sign up, your role is permanently registered in your Firestore user profile document and cannot be altered by client-side state or URL parameters. Existing accounts automatically restore their permanent Firestore role.
+            <strong>Security Notice:</strong> New accounts can only register as a campaigner or creator. Reviewer access is granted by an existing reviewer (or an administrator) and cannot be self-selected. Existing accounts automatically restore their stored role.
           </div>
         </div>
 
